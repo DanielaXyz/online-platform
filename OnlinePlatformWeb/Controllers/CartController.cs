@@ -1,17 +1,21 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OnlinePlatformWeb.DataTransferObjects;
 using OnlinePlatformWeb.Mappers;
 using OnlinePlatformWeb.Models;
 using OnlinePlatformWeb.Services.Interfaces;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace OnlinePlatformWeb.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-//todo auth
+[Authorize]
 public class CartController(ICartRepository _cartRepo) : ControllerBase
 {
-    private string UserId => "1";//todo
+    private string UserId => User.FindFirstValue(JwtRegisteredClaimNames.NameId)
+                         ?? throw new UnauthorizedAccessException();
 
     [HttpGet]
     public async Task<ActionResult<CartDto>> GetCart()

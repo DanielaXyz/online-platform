@@ -44,3 +44,13 @@ Content-Type: application/json
 DELETE {{OnlinePlatformWeb_HostAddress}}/api/cart
 Accept: application/json
 Content-Type: application/json
+###
+
+POST {{OnlinePlatformWeb_HostAddress}}/api/auth/token
+Accept: application/json
+Content-Type: application/json
+{
+    "userId": "123",
+    "username": "daniela.sadsad"
+}
+###
