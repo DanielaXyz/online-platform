@@ -1,0 +1,6 @@
+@OnlinePlatformWeb_HostAddress = http://localhost:5265
+
+GET {{OnlinePlatformWeb_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
