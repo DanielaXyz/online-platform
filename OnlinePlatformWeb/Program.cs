@@ -79,6 +79,9 @@ builder.Services.AddHybridCache(options =>
 
 builder.Services.AddScoped<ICartRepository, CartRepository>();
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<CartDbContext>("database");
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -91,6 +94,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 using (var scope = app.Services.CreateScope())
 {
