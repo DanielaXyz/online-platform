@@ -1,21 +1,33 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
 using OnlinePlatformWeb.Data;
 using OnlinePlatformWeb.Models;
 using OnlinePlatformWeb.Services.Interfaces;
 
 namespace ShoppingCartService.Services;
 
-public class CartRepository(CartDbContext _context, ILogger<CartRepository> _logger) : ICartRepository
+public class CartRepository(CartDbContext _context, HybridCache _cache, ILogger<CartRepository> _logger) : ICartRepository
 {
     public async Task<Cart?> GetCartAsync(string userId)
     {
-        _logger.LogDebug($"Getting cart for user {userId}.");
+        var cacheKey = $"cart:{userId}";
 
-        var dbCart = await _context.Carts
+        var cart = await _cache.GetOrCreateAsync<Cart?>(cacheKey, async cancel =>
+        {
+            _logger.LogDebug($"Getting cart for user {userId}.");
+
+            var dbCart = await _context.Carts
             .Include(c => c.Items)
-            .FirstOrDefaultAsync(c => c.UserId == userId);
+            .FirstOrDefaultAsync(c => c.UserId == userId, cancel);
+            return dbCart;
+        }, tags: [userId],
+        options: new HybridCacheEntryOptions
+        {
+            Expiration = TimeSpan.FromMinutes(30),
+            LocalCacheExpiration = TimeSpan.FromMinutes(5) 
+        });
 
-        return dbCart;
+        return cart;
     }
 
     public async Task<bool> DeleteCartAsync(string userId)
@@ -28,6 +40,9 @@ public class CartRepository(CartDbContext _context, ILogger<CartRepository> _log
         _context.Carts.Remove(cart);
         await _context.SaveChangesAsync();
 
+        var cacheKey = $"cart:{userId}";
+        await _cache.RemoveAsync(cacheKey);
+
         return true;
     }
 
@@ -35,9 +50,7 @@ public class CartRepository(CartDbContext _context, ILogger<CartRepository> _log
     {
         _logger.LogDebug($"Adding item to cart for user {userId}.");
 
-        var cart = await _context.Carts
-            .Include(c => c.Items)
-            .FirstOrDefaultAsync(c => c.UserId == userId);
+        var cart = await GetCartAsync(userId);
 
         if (cart == null)
         {
@@ -55,6 +68,14 @@ public class CartRepository(CartDbContext _context, ILogger<CartRepository> _log
 
             _context.Carts.Add(cart);
             await _context.SaveChangesAsync();
+
+            var cacheKey = $"cart:{userId}";
+            await _cache.SetAsync(cacheKey, cart, new HybridCacheEntryOptions
+            {
+                Expiration = TimeSpan.FromMinutes(30),
+                LocalCacheExpiration = TimeSpan.FromMinutes(5)
+            }, tags: [userId]);
+
             return;
         }
 
@@ -81,6 +102,13 @@ public class CartRepository(CartDbContext _context, ILogger<CartRepository> _log
         _context.Entry(cart).State = EntityState.Modified;
 
         await _context.SaveChangesAsync();
+
+        var updateCacheKey = $"cart:{userId}";
+        await _cache.SetAsync(updateCacheKey, cart, new HybridCacheEntryOptions
+        {
+            Expiration = TimeSpan.FromMinutes(30),
+            LocalCacheExpiration = TimeSpan.FromMinutes(5)
+        }, tags: [userId]);
     }
 
     public async Task RemoveItemAsync(string userId, string productId)
@@ -96,5 +124,12 @@ public class CartRepository(CartDbContext _context, ILogger<CartRepository> _log
         cart.Items.Remove(item);
 
         await _context.SaveChangesAsync();
+
+        var cacheKey = $"cart:{userId}";
+        await _cache.SetAsync(cacheKey, cart, new HybridCacheEntryOptions
+        {
+            Expiration = TimeSpan.FromMinutes(30),
+            LocalCacheExpiration = TimeSpan.FromMinutes(5)
+        }, tags: [userId]);
     }
 }

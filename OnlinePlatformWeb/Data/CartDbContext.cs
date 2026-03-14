@@ -12,15 +12,16 @@ public class CartDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+
         modelBuilder.Entity<Cart>()
+           .HasMany(c => c.Items)
+           .WithOne() 
+           .HasForeignKey(i => i.CartId)
+           .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Cart>()            
             .HasIndex(c => c.UserId)
             .IsUnique();
-
-        modelBuilder.Entity<CartItem>()
-            .HasOne(ci => ci.Cart)
-            .WithMany(c => c.Items)
-            .HasForeignKey(ci => ci.CartId)
-            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<CartItem>()
             .Property(i => i.UnitPrice)
