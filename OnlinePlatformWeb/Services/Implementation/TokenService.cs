@@ -10,7 +10,7 @@ public class TokenService(IConfiguration _configuration) : ITokenService
 {
     public string GenerateToken(string userId, string username)
     {
-        var secretKey = _configuration["Jwt:Secret"] ?? "ShoppingCartServiceProjectDanielaDimitrovska!";//todo, this should be from config
+        var secretKey = _configuration["Jwt:Secret"] ?? "ShoppingCartServiceProjectDanielaDimitrovska!";//todo, this should be from key vault
         var issuer = _configuration["Jwt:Issuer"] ?? "ShoppingCartService";
         var audience = _configuration["Jwt:Audience"] ?? "ShoppingCartAPI";
 
