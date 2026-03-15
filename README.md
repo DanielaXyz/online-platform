@@ -11,3 +11,5 @@ Execute the POST api/Auth/token method.
 You will get a token.
 
 After that you can execute the other method, by first clicking on the Authorize button on top right and entering the token from the previous step in the dialog.
+
+http://localhost:5000/health to check the status.
